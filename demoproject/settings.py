@@ -92,11 +92,14 @@ WSGI_APPLICATION = 'demoproject.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'defaultdb',
-        'USER': 'avnadmin',
-        'PASSWORD': 'os.getenv("DB_PASSWORD")',
-        'HOST': 'mysql-18ada6b0-jogunavaneetha729-6cb2.c.aivencloud.com',
-        'PORT': '25682',
+        'NAME': os.getenv("DB_NAME"),
+        'USER': os.getenv("DB_USER"),
+        'PASSWORD': os.getenv("DB_PASSWORD"),
+        'HOST': os.getenv("DB_HOST"),
+        'PORT': os.getenv("DB_PORT"),
+        'OPTIONS': {
+            'ssl': {},
+        },
     }
 }
 

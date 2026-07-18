@@ -92,11 +92,11 @@ WSGI_APPLICATION = 'demoproject.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'loky',
-        'USER': 'root',
-        'PASSWORD': 'Loky@1234',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': 'defaultdb',
+        'USER': 'avnadmin',
+        'PASSWORD': '',
+        'HOST': 'mysql-18ada6b0-jogunavaneetha729-6cb2.c.aivencloud.com',
+        'PORT': '25682',
     }
 }
 
@@ -136,6 +136,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

@@ -1,228 +1,176 @@
-import React, { useState } from 'react';
-import { 
-  FileText, 
-  Plus, 
-  Search, 
-  Filter, 
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  FileText,
+  Plus,
+  Search,
+  Filter,
   Calendar,
   Clock,
   User,
   CheckCircle,
   AlertCircle,
   XCircle,
-  Edit,
-  Trash2,
-  Eye,
-  Upload,
-  Download
-} from 'lucide-react';
+} from "lucide-react";
+
+// Axios instance with token refresh interceptor
+const api = axios.create({
+  baseURL: "http://127.0.0.1:8000",
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshResponse = await axios.post(
+          "http://127.0.0.1:8000/api/token/refresh/",
+          {
+            refresh: localStorage.getItem("refresh_token"),
+          }
+        );
+        localStorage.setItem("token", refreshResponse.data.access);
+        originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.access}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        window.location.href = "/";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 const AssignAssignments = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [batches, setBatches] = useState([]);
+  const [selectedBatches, setSelectedBatches] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [assignmentTypes, setAssignmentTypes] = useState([]);
+  const [userRole, setUserRole] = useState(localStorage.getItem("role") || "");
 
-  const assignments = [
-    {
-      id: 1,
-      title: 'Java OOP Concepts Assignment',
-      description: 'Create a comprehensive project demonstrating inheritance, polymorphism, and encapsulation',
-      type: 'Project',
-      assignedTo: 'All Students',
-      dueDate: '2025-01-22',
-      maxMarks: 100,
-      submittedBy: 15,
-      totalStudents: 28,
-      status: 'Active',
-      createdDate: '2025-01-15',
-      attachments: ['assignment_guidelines.pdf', 'sample_code.java']
-    },
-    {
-      id: 2,
-      title: 'Spring Boot Microservices',
-      description: 'Build a microservices architecture using Spring Boot with proper documentation',
-      type: 'Project',
-      assignedTo: 'Advanced Group',
-      dueDate: '2025-01-28',
-      maxMarks: 150,
-      submittedBy: 8,
-      totalStudents: 15,
-      status: 'Active',
-      createdDate: '2025-01-12',
-      attachments: ['requirements.pdf', 'api_specs.json']
-    },
-    {
-      id: 3,
-      title: 'Database Normalization Quiz',
-      description: 'Online quiz covering 1NF, 2NF, 3NF, and BCNF with practical examples',
-      type: 'Quiz',
-      assignedTo: 'All Students',
-      dueDate: '2025-01-18',
-      maxMarks: 50,
-      submittedBy: 28,
-      totalStudents: 28,
-      status: 'Completed',
-      createdDate: '2025-01-10',
-      attachments: []
-    },
-    {
-      id: 4,
-      title: 'Algorithm Analysis Report',
-      description: 'Analyze time and space complexity of sorting algorithms with implementation',
-      type: 'Report',
-      assignedTo: 'Intermediate Group',
-      dueDate: '2025-01-25',
-      maxMarks: 75,
-      submittedBy: 5,
-      totalStudents: 12,
-      status: 'Active',
-      createdDate: '2025-01-14',
-      attachments: ['template.docx']
-    },
-    {
-      id: 5,
-      title: 'Code Review Exercise',
-      description: 'Review provided code samples and suggest improvements with justification',
-      type: 'Exercise',
-      assignedTo: 'All Students',
-      dueDate: '2025-01-16',
-      maxMarks: 25,
-      submittedBy: 20,
-      totalStudents: 28,
-      status: 'Overdue',
-      createdDate: '2025-01-08',
-      attachments: ['code_samples.zip', 'review_template.pdf']
+  // Fetch batches and assignment types when modal opens
+  useEffect(() => {
+    if (showCreateModal) {
+      fetchBatches();
+      fetchAssignmentTypes();
     }
-  ];
+  }, [showCreateModal]);
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Active':
-        return <Clock size={16} className="text-blue-600" />;
-      case 'Completed':
-        return <CheckCircle size={16} className="text-green-600" />;
-      case 'Overdue':
-        return <AlertCircle size={16} className="text-red-600" />;
-      default:
-        return <XCircle size={16} className="text-gray-600" />;
+  // Fetch assignments on load
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await api.get("/assignments/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAssignments(response.data);
+      } catch (error) {
+        console.error("Error fetching assignments:", error);
+        alert("Failed to fetch assignments. Please login again.");
+      }
+    };
+    fetchAssignments();
+  }, []);
+
+  const fetchBatches = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.get("/trainer-dashboard/", { // Using existing /trainer-dashboard/
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Extract batches from batches_with_members, matching TrainerDashboard logic
+      const fetchedBatches = response.data.batches_with_members?.map(item => item.batch) || [];
+      setBatches(fetchedBatches);
+      if (fetchedBatches.length === 0) {
+        alert("No batches assigned to you. Contact admin.");
+      }
+    } catch (error) {
+      console.error("Error fetching batches:", error);
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Active':
-        return 'bg-blue-100 text-blue-800';
-      case 'Completed':
-        return 'bg-green-100 text-green-800';
-      case 'Overdue':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const fetchAssignmentTypes = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.get("/assignment-types/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAssignmentTypes(response.data);
+    } catch (error) {
+      console.error("Error fetching assignment types:", error);
     }
   };
 
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'Project':
-        return 'bg-purple-100 text-purple-800';
-      case 'Quiz':
-        return 'bg-green-100 text-green-800';
-      case 'Report':
-        return 'bg-orange-100 text-orange-800';
-      case 'Exercise':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const createNewAssignmentType = async () => {
+    if (userRole !== "trainer" && userRole !== "admin") {
+      alert("Only trainers and admins can create assignment types.");
+      return;
+    }
+    const newTypeName = prompt("Enter new assignment type name:");
+    if (!newTypeName || newTypeName.trim() === "") return;
+    try {
+      const token = localStorage.getItem("token");
+      await api.post(
+        "/assignment-types/",
+        { name: newTypeName.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchAssignmentTypes(); // Refresh types list
+      alert("Assignment type created successfully!");
+    } catch (error) {
+      console.error("Error creating assignment type:", error);
+      alert(`Failed to create assignment type: ${JSON.stringify(error.response?.data)}`);
     }
   };
 
-  const filteredAssignments = assignments.filter(assignment => {
-    if (selectedFilter === 'all') return true;
-    return assignment.status.toLowerCase() === selectedFilter;
-  });
+  const handleBatchSelect = (batchId) => {
+    if (selectedBatches.includes(batchId)) {
+      setSelectedBatches(selectedBatches.filter((id) => id !== batchId));
+    } else {
+      setSelectedBatches([...selectedBatches, batchId]);
+    }
+  };
 
-  const AssignmentCard = ({ assignment }) => (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">{assignment.title}</h3>
-            <span className={`px-2 py-1 text-xs rounded-full ${getTypeColor(assignment.type)}`}>
-              {assignment.type}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
-          <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-            <div className="flex items-center space-x-1">
-              <User size={14} />
-              <span>{assignment.assignedTo}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Calendar size={14} />
-              <span>Due: {assignment.dueDate}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <FileText size={14} />
-              <span>Max: {assignment.maxMarks} marks</span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="flex items-center space-x-1">
-              {getStatusIcon(assignment.status)}
-              <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(assignment.status)}`}>
-                {assignment.status}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="flex space-x-2">
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-            <Eye size={16} className="text-gray-600" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-            <Edit size={16} className="text-blue-600" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-            <Trash2 size={16} className="text-red-600" />
-          </button>
-        </div>
-      </div>
-      
-      <div className="space-y-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Submission Progress</span>
-          <span className="font-medium">{assignment.submittedBy}/{assignment.totalStudents} submitted</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full"
-            style={{ width: `${(assignment.submittedBy / assignment.totalStudents) * 100}%` }}
-          />
-        </div>
-        
-        {assignment.attachments.length > 0 && (
-          <div className="border-t pt-3">
-            <p className="text-xs text-gray-500 mb-2">Attachments:</p>
-            <div className="flex flex-wrap gap-2">
-              {assignment.attachments.map((file, index) => (
-                <span key={index} className="inline-flex items-center space-x-1 bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                  <FileText size={12} />
-                  <span>{file}</span>
-                  <Download size={12} className="cursor-pointer hover:text-blue-600" />
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        <div className="flex justify-between items-center pt-2">
-          <span className="text-xs text-gray-500">Created: {assignment.createdDate}</span>
-          <span className="text-sm font-medium text-green-600">
-            {Math.round((assignment.submittedBy / assignment.totalStudents) * 100)}% Submitted
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+  const handleCreateAssignment = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    const assignmentData = new FormData();
+    assignmentData.append("title", formData.get("title"));
+    assignmentData.append("description", formData.get("description"));
+    assignmentData.append("type", formData.get("assignment_type")); // Remap assignment_type to type
+    assignmentData.append("due_date", formData.get("due_date"));
+    assignmentData.append("max_marks", formData.get("max_marks"));
+
+    // Multiple batch IDs
+    selectedBatches.forEach((id) => assignmentData.append("assigned_to", id));
+
+    // Attachments
+    const files = formData.getAll("attachments");
+    files.forEach((file) => assignmentData.append("attachments", file));
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.post("/assignments/create/", assignmentData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setAssignments([...assignments, response.data]);
+      setShowCreateModal(false);
+      e.target.reset();
+      setSelectedBatches([]);
+    } catch (error) {
+      console.error("Error creating assignment:", error);
+      alert(`Failed to create assignment: ${JSON.stringify(error.response?.data)}`);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -234,175 +182,139 @@ const AssignAssignments = () => {
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Assign Assignments</h1>
         </div>
-        <button 
+        <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+          disabled={userRole !== "trainer" && userRole !== "admin"}
         >
           <Plus size={18} />
           <span>Create Assignment</span>
         </button>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Assignments</p>
-              <p className="text-2xl font-bold text-green-600">{assignments.length}</p>
-            </div>
-            <FileText size={24} className="text-green-600" />
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {assignments.filter(a => a.status === 'Active').length}
-              </p>
-            </div>
-            <Clock size={24} className="text-blue-600" />
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Overdue</p>
-              <p className="text-2xl font-bold text-red-600">
-                {assignments.filter(a => a.status === 'Overdue').length}
-              </p>
-            </div>
-            <AlertCircle size={24} className="text-red-600" />
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {assignments.filter(a => a.status === 'Completed').length}
-              </p>
-            </div>
-            <CheckCircle size={24} className="text-purple-600" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search assignments..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Filter size={20} className="text-gray-400" />
-            <select
-              value={selectedFilter}
-              onChange={(e) => setSelectedFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-            >
-              <option value="all">All Assignments</option>
-              <option value="active">Active</option>
-              <option value="completed">Completed</option>
-              <option value="overdue">Overdue</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Assignments Grid */}
+      {/* Assignments List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredAssignments.map((assignment) => (
-          <AssignmentCard key={assignment.id} assignment={assignment} />
-        ))}
+        {assignments.length > 0 ? (
+          assignments.map((a) => (
+            <div key={a.id} className="bg-white p-4 rounded-lg shadow-md border">
+              <h3 className="font-semibold">{a.title}</h3>
+              <p className="text-sm">{a.description}</p>
+              <p className="text-xs text-gray-500">
+                Batches: {a.assigned_to?.map((b) => b.batchname).join(", ") || "N/A"}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p>No assignments yet.</p>
+        )}
       </div>
 
-      {/* Create Assignment Modal */}
+      {/* Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Assignment</h2>
-            <form className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Assignment Title</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Enter assignment title"
-                />
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+            <h2 className="text-xl font-semibold mb-4">Create New Assignment</h2>
+            {batches.length === 0 && (
+              <div className="bg-yellow-100 p-2 rounded mb-4 text-sm">
+                No batches available for you. Contact admin.
+              </div>
+            )}
+            <form onSubmit={handleCreateAssignment} className="space-y-4">
+              <input
+                type="text"
+                name="title"
+                placeholder="Title"
+                className="w-full border p-2 rounded"
+                required
+              />
+              <textarea
+                name="description"
+                placeholder="Description"
+                rows={3}
+                className="w-full border p-2 rounded"
+                required
+              />
+              <div className="relative">
+                <select
+                  name="assignment_type"
+                  className="w-full border p-2 rounded"
+                  required
+                  disabled={assignmentTypes.length === 0}
+                >
+                  <option value="">Select Type</option>
+                  {assignmentTypes.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                {(userRole === "trainer" || userRole === "admin") && (
+                  <button
+                    type="button"
+                    onClick={createNewAssignmentType}
+                    className="absolute right-0 top-0 mt-1 mr-1 px-2 py-1 bg-blue-500 text-white text-xs rounded"
+                    disabled={assignmentTypes.length === 0}
+                  >
+                    + Add Type
+                  </button>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Enter assignment description"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                    <option value="project">Project</option>
-                    <option value="quiz">Quiz</option>
-                    <option value="report">Report</option>
-                    <option value="exercise">Exercise</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Marks</label>
-                  <input
-                    type="number"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="100"
-                  />
+                <p className="mb-2 font-medium">Assign to Batches:</p>
+                <div className="flex flex-wrap gap-2">
+                  {batches.map((batch) => (
+                    <button
+                      type="button"
+                      key={batch.id}
+                      className={`px-3 py-1 border rounded ${
+                        selectedBatches.includes(batch.id)
+                          ? "bg-blue-600 text-white"
+                          : "bg-white"
+                      }`}
+                      onClick={() => handleBatchSelect(batch.id)}
+                    >
+                      {batch.batchname}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
-                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                    <option value="all">All Students</option>
-                    <option value="advanced">Advanced Group</option>
-                    <option value="intermediate">Intermediate Group</option>
-                    <option value="beginner">Beginner Group</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                  <Upload size={24} className="mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">Click to upload files or drag and drop</p>
-                  <input type="file" multiple className="hidden" />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 pt-4">
+              <input
+                type="date"
+                name="due_date"
+                className="w-full border p-2 rounded"
+                required
+              />
+              <input
+                type="number"
+                name="max_marks"
+                placeholder="Max Marks"
+                className="w-full border p-2 rounded"
+                required
+              />
+              <input
+                type="file"
+                name="attachments"
+                multiple
+                className="w-full border p-2 rounded"
+              />
+              <div className="flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200"
+                  className="px-4 py-2 border rounded"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                  className="bg-green-600 text-white px-4 py-2 rounded"
+                  disabled={
+                    assignmentTypes.length === 0 ||
+                    selectedBatches.length === 0 ||
+                    (userRole !== "trainer" && userRole !== "admin")
+                  }
                 >
-                  Create Assignment
+                  Create
                 </button>
               </div>
             </form>

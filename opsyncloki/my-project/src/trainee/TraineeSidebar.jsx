@@ -29,7 +29,7 @@ const TraineeSidebar = ({ activeSection, setActiveSection }) => {
     { id: 'performance', icon: BarChart3, label: 'Track Performance' },
     { id: 'resources', icon: Book, label: 'Access Resources' },
     { id: 'settings', icon: Settings, label: 'Account Settings' },
-    
+    { id: 'help', icon: HelpCircle, label: 'Help & Support' },
     { id: 'notifications', icon: Bell, label: 'Notifications' },
   ];
 
@@ -95,7 +95,7 @@ const TraineeSidebar = ({ activeSection, setActiveSection }) => {
               >
                 <item.icon 
                   size={20} 
-                  className={`${isCollapsed ? 'mx-auto' : 'mr-3'} transition-colors duration-200`}
+                  className={`${isCollapsed ? 'mx-auto' : 'mr-2'} transition-colors duration-200`}
                 />
                 {!isCollapsed && (
                   <span className="text-sm font-medium">

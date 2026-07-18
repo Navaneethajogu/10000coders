@@ -1,26 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser,Batch, Trainee, Trainer
+from .models import CustomUser,Batch, Trainee, Trainer,AssignmentType, Assignment
 
-# class CustomUserAdmin(UserAdmin):
-#     model = CustomUser
-#     list_display = ('username', 'email', 'role', 'domain', 'is_staff')
-#     list_filter = ('role', 'domain')
-#     fieldsets = (
-#         (None, {'fields': ('username', 'password')}),
-#         ('Personal Info', {'fields': ('email', 'role', 'domain')}),
-#         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
-#     )
-#     add_fieldsets = (
-#         (None, {
-#             'classes': ('wide',),
-#             'fields': ('username', 'email', 'role', 'domain', 'password1', 'password2'),
-#         }),
-#     )
-#     search_fields = ('username', 'email')
-#     ordering = ('username',)
-#     filter_horizontal = (
-# )
+
     
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
@@ -96,8 +78,22 @@ class TrainerAdmin(admin.ModelAdmin):
 
 
 
+
+##################################################################
+# Tranier dashboard
+class AssignmentTypeAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+
+class AssignmentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'type', 'due_date', 'status', 'created_by')
+    list_filter = ('status', 'type', 'created_date')
+    search_fields = ('title', 'description')
+
+
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(Batch, BatchAdmin)
 admin.site.register(Trainee, TraineeAdmin)
 admin.site.register(Trainer, TrainerAdmin)
-
+admin.site.register(AssignmentType, AssignmentTypeAdmin)
+admin.site.register(Assignment, AssignmentAdmin)

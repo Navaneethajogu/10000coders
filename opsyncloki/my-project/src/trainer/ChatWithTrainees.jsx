@@ -29,7 +29,7 @@ const ChatWithTrainees = () => {
       online: true,
       image: 'https://images.pexels.com/photos/2182975/pexels-photo-2182975.jpeg?auto=compress&cs=tinysrgb&w=150'
     },
-    {
+    {         
       id: 2,
       name: 'Priya Sharma',
       lastMessage: 'Can you help me with the Spring Boot assignment?',

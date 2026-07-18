@@ -237,7 +237,7 @@ const DashboardCards = ({ onCardClick, trainers, trainees, batches, onRefresh })
   const token = localStorage.getItem('token');
 
   const DOMAIN_CHOICES = [
-    { value: 'java', label: 'Java',textColor: 'blue-900' },
+    { value: 'java', label: 'Java' },
     { value: 'python', label: 'Python' },
     { value: 'web_developer', label: 'Web Developer' },
     { value: 'testing', label: 'Testing' },
@@ -303,8 +303,8 @@ const DashboardCards = ({ onCardClick, trainers, trainees, batches, onRefresh })
       case "java":
         icon = Coffee;
         color = "bg-gradient-to-r from-green-500 to-teal-500";
-        textColor = "text-purple-600";
-        bgColor = "bg-green-70";
+        textColor = "text-green-600";
+        bgColor = "bg-green-50";
         break;
       case "python":
         icon = Monitor;
@@ -502,7 +502,7 @@ const DashboardCards = ({ onCardClick, trainers, trainees, batches, onRefresh })
       const data = {
         batchname: createBatchForm.batchname,
         domain: createBatchForm.domain,
-        trainer: parseInt(createBatchForm.trainer),
+        trainer: createBatchForm.trainer, // Send trainer ID
         start_date: createBatchForm.start_date,
         end_date: createBatchForm.end_date,
       };
@@ -529,7 +529,7 @@ const DashboardCards = ({ onCardClick, trainers, trainees, batches, onRefresh })
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold text-purple-900 mb-6">Domains Overview</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Domains Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {batchStats.map((item) => (
             <BatchCard key={item.id} item={item} />
@@ -568,14 +568,6 @@ const DashboardCards = ({ onCardClick, trainers, trainees, batches, onRefresh })
           <button onClick={() => setShowCreateBatch(true)} className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg transition-colors duration-200">
             <Plus size={18} />
             <span className="text-sm font-medium">Create Batch</span>
-          </button>
-          <button className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg transition-colors duration-200">
-            <Calendar size={18} />
-            <span className="text-sm font-medium">Schedule Meeting</span>
-          </button>
-          <button className="flex items-center justify-center space-x-2 bg-orange-600 hover:bg-orange-700 text-white p-3 rounded-lg transition-colors duration-200">
-            <BarChart size={18} />
-            <span className="text-sm font-medium">View Reports</span>
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   ClipboardList, 
   Plus, 
@@ -15,80 +16,122 @@ import {
   Eye
 } from 'lucide-react';
 
+// Axios instance with token refresh interceptor
+const api = axios.create({
+  baseURL: "http://127.0.0.1:8000",
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshResponse = await axios.post(
+          "http://127.0.0.1:8000/api/token/refresh/",
+          {
+            refresh: localStorage.getItem("refresh_token"),
+          }
+        );
+        localStorage.setItem("token", refreshResponse.data.access);
+        originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.access}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        window.location.href = "/";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 const AssignTasks = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [batches, setBatches] = useState([]);
+  const [selectedBatches, setSelectedBatches] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [userRole, setUserRole] = useState(localStorage.getItem("role") || "");
 
-  const tasks = [
-    {
-      id: 1,
-      title: 'Complete Java Collections Assignment',
-      description: 'Implement ArrayList, LinkedList, and HashMap operations with proper error handling',
-      assignedTo: 'All Students',
-      dueDate: '2025-01-20',
-      priority: 'High',
-      status: 'Active',
-      completedBy: 18,
-      totalStudents: 28,
-      createdDate: '2025-01-15'
-    },
-    {
-      id: 2,
-      title: 'Spring Boot REST API Project',
-      description: 'Create a complete REST API with CRUD operations using Spring Boot',
-      assignedTo: 'Advanced Group',
-      dueDate: '2025-01-25',
-      priority: 'Medium',
-      status: 'Active',
-      completedBy: 12,
-      totalStudents: 15,
-      createdDate: '2025-01-12'
-    },
-    {
-      id: 3,
-      title: 'Database Design Exercise',
-      description: 'Design and implement a normalized database schema for e-commerce system',
-      assignedTo: 'All Students',
-      dueDate: '2025-01-18',
-      priority: 'High',
-      status: 'Overdue',
-      completedBy: 22,
-      totalStudents: 28,
-      createdDate: '2025-01-08'
-    },
-    {
-      id: 4,
-      title: 'Unit Testing Practice',
-      description: 'Write comprehensive unit tests using JUnit for the calculator application',
-      assignedTo: 'Beginner Group',
-      dueDate: '2025-01-30',
-      priority: 'Low',
-      status: 'Active',
-      completedBy: 8,
-      totalStudents: 13,
-      createdDate: '2025-01-14'
-    },
-    {
-      id: 5,
-      title: 'Code Review Assignment',
-      description: 'Review and provide feedback on peer code submissions',
-      assignedTo: 'All Students',
-      dueDate: '2025-01-16',
-      priority: 'Medium',
-      status: 'Completed',
-      completedBy: 28,
-      totalStudents: 28,
-      createdDate: '2025-01-10'
+  // Fetch batches when modal opens
+  useEffect(() => {
+    if (showCreateModal) {
+      fetchBatches();
     }
-  ];
+  }, [showCreateModal]);
 
-  const students = [
-    { id: 1, name: 'Alex Kumar', group: 'Advanced' },
-    { id: 2, name: 'Priya Sharma', group: 'Beginner' },
-    { id: 3, name: 'David Lee', group: 'Advanced' },
-    { id: 4, name: 'Maria Garcia', group: 'Intermediate' },
-    { id: 5, name: 'James Wilson', group: 'Beginner' }
-  ];
+  // Fetch tasks on load
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await api.get("/tasks/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTasks(response.data);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        alert("Failed to fetch tasks. Please login again.");
+      }
+    };
+    fetchTasks();
+  }, []);
+
+  const fetchBatches = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.get("/trainer-dashboard/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const fetchedBatches = response.data.batches_with_members?.map(item => item.batch) || [];
+      setBatches(fetchedBatches);
+      if (fetchedBatches.length === 0) {
+        alert("No batches assigned to you. Contact admin.");
+      }
+    } catch (error) {
+      console.error("Error fetching batches:", error);
+    }
+  };
+
+  const handleBatchSelect = (batchId) => {
+    if (selectedBatches.includes(batchId)) {
+      setSelectedBatches(selectedBatches.filter((id) => id !== batchId));
+    } else {
+      setSelectedBatches([...selectedBatches, batchId]);
+    }
+  };
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    const taskData = new FormData();
+    taskData.append("title", formData.get("title"));
+    taskData.append("description", formData.get("description"));
+    taskData.append("priority", formData.get("priority"));
+    taskData.append("due_date", formData.get("due_date"));
+
+    // Multiple batch IDs
+    selectedBatches.forEach((id) => taskData.append("assigned_to", id));
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.post("/tasks/create/", taskData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setTasks([...tasks, response.data]);
+      setShowCreateModal(false);
+      e.target.reset();
+      setSelectedBatches([]);
+    } catch (error) {
+      console.error("Error creating task:", error);
+      alert(`Failed to create task: ${JSON.stringify(error.response?.data)}`);
+    }
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -143,11 +186,11 @@ const AssignTasks = () => {
           <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
             <div className="flex items-center space-x-1">
               <User size={14} />
-              <span>{task.assignedTo}</span>
+              <span>Batches: {task.assigned_to?.map((b) => b.batchname).join(", ") || "N/A"}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Calendar size={14} />
-              <span>Due: {task.dueDate}</span>
+              <span>Due: {task.due_date}</span>
             </div>
           </div>
           <div className="flex items-center space-x-2 mb-3">
@@ -178,18 +221,18 @@ const AssignTasks = () => {
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Completion Progress</span>
-          <span className="font-medium">{task.completedBy}/{task.totalStudents} students</span>
+          <span className="font-medium">{task.completed_by}/{task.total_students} students</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full"
-            style={{ width: `${(task.completedBy / task.totalStudents) * 100}%` }}
+            style={{ width: `${(task.completed_by / task.total_students) * 100}%` }}
           />
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-500">Created: {task.createdDate}</span>
+          <span className="text-xs text-gray-500">Created: {task.created_date}</span>
           <span className="text-sm font-medium text-blue-600">
-            {Math.round((task.completedBy / task.totalStudents) * 100)}% Complete
+            {Math.round((task.completed_by / task.total_students) * 100)}% Complete
           </span>
         </div>
       </div>
@@ -209,6 +252,7 @@ const AssignTasks = () => {
         <button 
           onClick={() => setShowCreateModal(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+          disabled={userRole !== "trainer" && userRole !== "admin"}
         >
           <Plus size={18} />
           <span>Create New Task</span>
@@ -300,48 +344,73 @@ const AssignTasks = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Task</h2>
-            <form className="space-y-4">
+            {batches.length === 0 && (
+              <div className="bg-yellow-100 p-2 rounded mb-4 text-sm">
+                No batches available for you. Contact admin.
+              </div>
+            )}
+            <form onSubmit={handleCreateTask} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Task Title</label>
                 <input
                   type="text"
+                  name="title"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter task title"
+                  required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
+                  name="description"
                   rows={3}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter task description"
+                  required
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Assign to Batches</label>
+                <div className="flex flex-wrap gap-2">
+                  {batches.map((batch) => (
+                    <button
+                      type="button"
+                      key={batch.id}
+                      className={`px-3 py-1 border rounded ${
+                        selectedBatches.includes(batch.id)
+                          ? "bg-blue-600 text-white"
+                          : "bg-white"
+                      }`}
+                      onClick={() => handleBatchSelect(batch.id)}
+                    >
+                      {batch.batchname}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
-                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="all">All Students</option>
-                    <option value="advanced">Advanced Group</option>
-                    <option value="intermediate">Intermediate Group</option>
-                    <option value="beginner">Beginner Group</option>
-                  </select>
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                  <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <select
+                    name="priority"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
                   </select>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
-                <input
-                  type="date"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                  <input
+                    type="date"
+                    name="due_date"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
@@ -354,6 +423,7 @@ const AssignTasks = () => {
                 <button
                   type="submit"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                  disabled={selectedBatches.length === 0 || (userRole !== "trainer" && userRole !== "admin")}
                 >
                   Create Task
                 </button>

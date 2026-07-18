@@ -1,22 +1,20 @@
-// src/App.jsx
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Login from './Login';
-import AdminDashboard from './admin/Admindashboard';
+import LoginPage from './Login'; // Changed from Login to LoginPage
+import AdminDashboard from './admin/AdminDashboard';
 import TrainerDashboard from './trainer/Trainerdashboard';
 import TraineeDashboard from './trainee/Traineedashboard';
-import LoginPage  from './trainer/TrainerLogin'
+import TrainerLogin from './trainer/TrainerLogin';
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<LoginPage />} /> {/* Updated to LoginPage */}
         <Route path="/admin/" element={<AdminDashboard />} />
         <Route path="/trainer" element={<TrainerDashboard />} />
         <Route path="/trainee" element={<TraineeDashboard />} />
-        <Route path="/trainerlogin" element={<LoginPage />} />
-        
+        <Route path="/trainerlogin" element={<TrainerLogin />} /> {/* Fixed import name */}
       </Routes>
     </BrowserRouter>
   );

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import axios from "axios";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
@@ -6,9 +7,10 @@ import DashboardCards, { StatTable } from "./DashboardCards";
 import TrainerDetails from "./TrainerDetails";
 import ManageTrainers from "./ManageTrainers";
 import AttendanceRecords from "./AttendanceRecords";
-import AssignTrainers from "./AssignTrainers";
 import PerformanceAnalysis from "./PerformanceAnalysis";
 import MeetingSchedules from "./MeetingSchedules";
+import Settings from "./Settings";
+import Logout from "./Logout";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
@@ -23,6 +25,7 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
 
   const token = localStorage.getItem("token");
+  const navigate = useNavigate(); // Initialize navigate
 
   useEffect(() => {
     if (!token) {
@@ -93,7 +96,6 @@ const AdminDashboard = () => {
         domain: t.domain,
         batchId: t.batchId,
         role: t.role
-        
       })));
       console.log("Refreshed Batches Data:", batchesRes.data.map(b => ({
         id: b.id,
@@ -122,6 +124,11 @@ const AdminDashboard = () => {
   const handleBackToDashboard = () => {
     setSelectedCard(null);
     setSelectedCardData(null);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate('/'); // Use navigate instead of window.location.href
   };
 
   const renderContent = () => {
@@ -186,12 +193,14 @@ const AdminDashboard = () => {
         return <ManageTrainers trainers={trainers} onRefresh={handleRefresh} />;
       case "attendance":
         return <AttendanceRecords trainees={trainees} batches={batches} />;
-      case "assign-trainers":
-        return <AssignTrainers trainers={trainers} batches={batches} onRefresh={handleRefresh} />;
       case "performance":
         return <PerformanceAnalysis trainees={trainees} batches={batches} />;
       case "meetings":
         return <MeetingSchedules />;
+      case "settings":
+        return <Settings activeSection={activeSection} />;
+      case "logout":
+        return <Logout activeSection={activeSection} onLogout={handleLogout} />;
       default:
         return (
           <DashboardCards

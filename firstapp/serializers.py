@@ -1,38 +1,8 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from .models import CustomUser,Batch, Trainee, Trainer
+from .models import AssignmentType, Assignment
 
-# class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-#     @classmethod
-#     def get_token(cls, user):
-#         token = super().get_token(user)
-#         token['role'] = user.role
-#         return token
-
-# class UserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = CustomUser
-#         fields = ['id', 'username', 'email', 'role', 'domain', 'password']
-#         extra_kwargs = {'password': {'write_only': True}}
-
-#     def create(self, validated_data):
-#         role = validated_data.get('role')
-#         email = validated_data.get('email')
-
-#         # username = email for trainer and trainee roles
-#         if role in ['admin','trainer', 'trainee']:
-#             username = email
-#         else:
-#             username = validated_data.get('username') or email
-
-#         user = CustomUser.objects.create_user(
-#             username=username,
-#             email=email,
-#             role=role,
-#             domain=validated_data.get('domain'),
-#             password=validated_data['password']
-#         )
-#         return user
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -154,3 +124,43 @@ class TrainerCreateSerializer(serializers.ModelSerializer):
 
         trainer = Trainer.objects.create(user=user, domain=domain)
         return trainer
+    
+    
+    #Trainer dashboard
+class AssignmentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssignmentType
+        fields = ['id', 'name']
+
+class AssignmentSerializer(serializers.ModelSerializer):
+    # Accept plain IDs for type and assigned_to
+    type = serializers.PrimaryKeyRelatedField(queryset=AssignmentType.objects.all())
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Batch.objects.all()
+    )
+    created_by = serializers.StringRelatedField(read_only=True)
+    total_students = serializers.SerializerMethodField()
+    submitted_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Assignment
+        fields = [
+            'id', 'title', 'description', 'type', 'assigned_to', 'due_date',
+            'max_marks', 'status', 'created_date', 'created_by',
+            'total_students', 'submitted_by', 'attachments'
+        ]
+
+    def get_total_students(self, obj):
+        return sum(batch.trainee_set.count() for batch in obj.assigned_to.all())
+
+    def get_submitted_by(self, obj):
+        return 0  # Placeholder
+
+    def create(self, validated_data):
+        assigned_to = validated_data.pop('assigned_to', [])
+        assignment = Assignment.objects.create(**validated_data)
+        assignment.assigned_to.set(assigned_to)
+        return assignment
+    
+   

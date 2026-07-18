@@ -8,7 +8,8 @@ import {
   MessageCircle,
   ChevronLeft,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  Plus // New icon for Create Batch
 } from 'lucide-react';
 
 const TrainerSidebar = ({ activeSection, setActiveSection }) => {
@@ -22,10 +23,9 @@ const TrainerSidebar = ({ activeSection, setActiveSection }) => {
     { id: 'meetings', icon: Video, label: 'Conduct Meets' },
     { id: 'chat', icon: MessageCircle, label: 'Chat with Trainees' },
     { id: 'add-trainee', icon: UserPlus, label: 'Add Trainee' },
-    // Added more items to test scrolling
-    { id: 'reports', icon: FileText, label: 'Generate Reports' },
-    { id: 'settings', icon: UserCheck, label: 'Configure Settings' },
-    { id: 'notifications', icon: MessageCircle, label: 'Manage Notifications' },
+    { id: 'create-batch', icon: Plus, label: 'Create Batch' }, // Added Create Batch item
+    { id: 'settings', icon: UserCheck, label: ' Settings' },
+    
   ];
 
   return (
@@ -33,26 +33,26 @@ const TrainerSidebar = ({ activeSection, setActiveSection }) => {
       className={`bg-gradient-to-b from-indigo-900 to-indigo-800 text-white transition-all duration-300 flex flex-col ${
         isCollapsed ? 'w-16' : 'w-64'
       } min-h-screen fixed left-0 top-0 z-20 shadow-1xl border-r border-indigo-700 sidebar`}
-      style={{ maxHeight: '100vh', overflowY: 'auto', overflowX: 'auto' }} // Both vertical and horizontal scrolling
+      style={{ maxHeight: '100vh', overflowY: 'auto', overflowX: 'auto' }}
     >
       {/* Custom Scrollbar Styles */}
       <style>
         {`
           .sidebar::-webkit-scrollbar {
-            width: 12px; /* Thickness of vertical scrollbar */
-            height: 12px; /* Thickness of horizontal scrollbar */
+            width: 12px;
+            height: 12px;
           }
           .sidebar::-webkit-scrollbar-track {
-            background: #f4f4f8ff; /* Darker indigo-900 shade */
+            background: #f4f4f8ff;
             border-radius: 8px;
           }
           .sidebar::-webkit-scrollbar-thumb {
-            background-color: #7d7d80ff; /* Indigo-500 for thumb */
+            background-color: #7d7d80ff;
             border-radius: 8px;
-            border: 2px solid #c4c4c9ff; /* Match track color for border */
+            border: 2px solid #c4c4c9ff;
           }
           .sidebar::-webkit-scrollbar-thumb:hover {
-            background-color: #606063ff; /* Indigo-600 on hover */
+            background-color: #606063ff;
           }
         `}
       </style>
@@ -69,7 +69,7 @@ const TrainerSidebar = ({ activeSection, setActiveSection }) => {
       <div className="p-4 border-b border-indigo-700">
         {!isCollapsed && (
           <div className="text-center">
-            <h2 className="text-4xl font-bold text-indigo-300">CamelQ</h2>
+            <h2 className="text-4xl font-bold text-indigo-300">TMS </h2>
             <p className="text-sm text-indigo-400 mt-1">Training Management</p>
           </div>
         )}

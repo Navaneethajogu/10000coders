@@ -40,9 +40,10 @@ const AdminDashboard = () => {
         setLoading(true);
         setError(null);
         const [trainersRes, traineesRes, batchesRes] = await Promise.all([
-          axios.get("http://127.0.0.1:8000/trainers/", { headers }),
-          axios.get("http://127.0.0.1:8000/trainees/", { headers }),
-          axios.get("http://127.0.0.1:8000/batches-list/", { headers }),
+          axios.get("https://one0000coders.onrender.com/trainers/", { headers }),
+          axios.get("https://one0000coders.onrender.com/trainees/", { headers }),
+          axios.get("https://one0000coders.onrender.com/batches-list/", { headers }),
+          
         ]);
         console.log("Trainers Data:", trainersRes.data);
         console.log("Trainees Data:", traineesRes.data.map(t => ({
@@ -85,9 +86,9 @@ const AdminDashboard = () => {
       setLoading(true);
       setError(null);
       const [trainersRes, traineesRes, batchesRes] = await Promise.all([
-        axios.get("http://127.0.0.1:8000/trainers/", { headers }),
-        axios.get("http://127.0.0.1:8000/trainees/", { headers }),
-        axios.get("http://127.0.0.1:8000/batches-list/", { headers }),
+        axios.get("https://one0000coders.onrender.com/trainers/", { headers }),
+        axios.get("https://one0000coders.onrender.com/trainees/", { headers }),
+        axios.get("https://one0000coders.onrender.com/batches-list/", { headers }),
       ]);
       console.log("Refreshed Trainers Data:", trainersRes.data);
       console.log("Refreshed Trainees Data:", traineesRes.data.map(t => ({

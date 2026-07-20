@@ -463,7 +463,7 @@ const DashboardCards = ({ onCardClick, trainers, trainees, batches, onRefresh })
         password: addTrainerForm.password1,
         ...(addTrainerForm.role === 'trainee' && { batchId: addTrainerForm.batchId }),
       };
-      const response = await axios.post('http://127.0.0.1:8000/add-trainer/', data, { headers });
+      const response = await axios.post('https://one0000coders.onrender.com/add-trainer/', data, { headers });
       if (response.status === 201) {
         setSuccess('Trainer/Trainee added successfully');
         setShowAddTrainer(false);
@@ -506,7 +506,7 @@ const DashboardCards = ({ onCardClick, trainers, trainees, batches, onRefresh })
         start_date: createBatchForm.start_date,
         end_date: createBatchForm.end_date,
       };
-      const response = await axios.post('http://127.0.0.1:8000/batches/', data, { headers });
+      const response = await axios.post('https://one0000coders.onrender.com/batches/', data, { headers });
       if (response.status === 201) {
         setSuccess('Batch created successfully');
         setShowCreateBatch(false);

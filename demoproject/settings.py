@@ -48,7 +48,7 @@ INSTALLED_APPS = [
 ]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-     "https://loky44.vercel.app",]
+     "https://loky44-mu.vercel.app",]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

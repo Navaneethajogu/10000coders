@@ -17,7 +17,7 @@ function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await axios.post('https://one0000coders.onrender.com/api/token/', {
+      const res = await axios.post('https://lokyexamplecom.pythonanywhere.com/api/token/', {
          email,
         password,
       });

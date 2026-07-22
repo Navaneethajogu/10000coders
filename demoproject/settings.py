@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",]
+    "http://localhost:5173",
+     "https://loky44.vercel.app",]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
